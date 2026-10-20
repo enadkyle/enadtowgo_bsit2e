@@ -13,11 +13,11 @@ public class UserDao {
         String sql = "INSERT INTO USERS (Username, Password, Full_Name, Role, Status) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, user.getUsername());
-            ps.setString(2, user.getPassword());
-            ps.setString(3, user.getFullName());
-            ps.setString(4, user.getRole());
-            ps.setString(5, user.getStatus());
+            ps.setString(1, user.username());
+            ps.setString(2, user.password());
+            ps.setString(3, user.fullName());
+            ps.setString(4, user.role());
+            ps.setString(5, user.status());
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             System.out.println("Register error: " + e.getMessage());

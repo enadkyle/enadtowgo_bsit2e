@@ -78,7 +78,7 @@ public class Authentication {
             System.out.println("Invalid username or password.");
             return;
         }
-        if ("PENDING".equalsIgnoreCase(user.getStatus())) {
+        if ("PENDING".equalsIgnoreCase(user.status())) {
             System.out.println("Your account is still pending approval.");
             return;
         }
@@ -86,12 +86,12 @@ public class Authentication {
     }
 
     private void routeByRole(User user) {
-        System.out.println("Welcome, " + user.getFullName() + "!");
-        switch (user.getRole().toUpperCase()) {
+        System.out.println("Welcome, " + user.fullName() + "!");
+        switch (user.role().toUpperCase()) {
             case "ADMIN":  new AdminMenu(userDao, scanner, user).show(); break;
             case "STAFF":  new StaffMenu(userDao, scanner, user).show(); break;
             case "DRIVER": new DriverMenu(userDao, scanner, user).show(); break;
-            default: System.out.println("Unknown role: " + user.getRole());
+            default: System.out.println("Unknown role: " + user.role());
         }
     }
 }
