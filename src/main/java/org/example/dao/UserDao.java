@@ -6,6 +6,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class UserDao {
 
@@ -33,18 +35,64 @@ public class UserDao {
             ps.setString(2, password);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return new User(
-                            rs.getInt("Users_ID"),
-                            rs.getString("Full_Name"),
-                            rs.getString("Username"),
-                            rs.getString("Password"),
-                            rs.getString("Role"),
-                            rs.getString("Status"));
+                    return mapUser(rs);
                 }
             }
         } catch (SQLException e) {
             System.out.println("Login error: " + e.getMessage());
         }
         return null;
+    }
+
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM USERS";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                users.add(mapUser(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error loading users: " + e.getMessage());
+        }
+        return users;
+    }
+
+    public List<User> getPendingUsers() {
+        List<User> users = new ArrayList<>();
+        String sql = "SELECT * FROM USERS WHERE Status = 'PENDING'";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                users.add(mapUser(rs));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error loading pending users: " + e.getMessage());
+        }
+        return users;
+    }
+
+    public boolean approveUser(int userId) {
+        String sql = "UPDATE USERS SET Status = 'APPROVED' WHERE Users_ID = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.out.println("Error approving user: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private User mapUser(ResultSet rs) throws SQLException {
+        return new User(
+                rs.getInt("Users_ID"),
+                rs.getString("Full_Name"),
+                rs.getString("Username"),
+                rs.getString("Password"),
+                rs.getString("Role"),
+                rs.getString("Status"));
     }
 }

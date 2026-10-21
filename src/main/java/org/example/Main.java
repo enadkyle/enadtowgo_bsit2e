@@ -8,7 +8,13 @@ import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        DatabaseInitializer.initialize();
+        try {
+            DatabaseInitializer.initialize();
+        } catch (RuntimeException e) {
+            System.out.println("Cannot start application: " + e.getMessage());
+            return;
+        }
+
         UserDao userDao = new UserDao();
         Scanner scanner = new Scanner(System.in);
         new Authentication(userDao, scanner).start();
