@@ -1,6 +1,8 @@
 package org.example.ui;
 
+import org.example.dao.ActivityLogDao;
 import org.example.dao.UserDao;
+import org.example.model.ActivityLog;
 import org.example.model.User;
 
 import java.util.List;
@@ -10,6 +12,7 @@ public class AdminMenu {
     private final UserDao userDao;
     private final Scanner scanner;
     private final User user;
+    private final ActivityLogDao logDao = new ActivityLogDao();
 
     private static final List<String> VALID_ROLES = List.of("ADMIN", "DRIVER", "STAFF");
     private static final List<String> VALID_STATUSES = List.of("APPROVED", "PENDING");
@@ -28,7 +31,8 @@ public class AdminMenu {
             System.out.println("2. View Pending Registrations");
             System.out.println("3. Approve User Account");
             System.out.println("4. Update User Role/Status");
-            System.out.println("5. Logout");
+            System.out.println("5. View System Audit Logs");
+            System.out.println("6. Logout");
 
             int choice = readIntInput("Choose an option: ");
 
@@ -46,6 +50,9 @@ public class AdminMenu {
                     updateUser();
                     break;
                 case 5:
+                    viewAuditLogs();
+                    break;
+                case 6:
                     running = false;
                     break;
                 default:
@@ -93,6 +100,8 @@ public class AdminMenu {
 
             if (userDao.approveUser(id)) {
                 System.out.println("SUCCESS: User ID " + id + " has been APPROVED.");
+                logDao.logAction(user.usersId(), "USER_APPROVED",
+                        "Admin " + user.usersId() + " approved account for User ID " + id);
             } else {
                 System.out.println("Approval failed. Please try again.");
             }
@@ -143,6 +152,9 @@ public class AdminMenu {
         if (userDao.updateUserRoleAndStatus(targetUserId, newRole, newStatus)) {
             System.out.println("SUCCESS: User ID " + targetUserId
                     + " updated to role " + newRole + " and status " + newStatus + ".");
+            logDao.logAction(user.usersId(), "USER_UPDATED",
+                    "Admin " + user.usersId() + " changed User " + targetUserId
+                            + " to " + newRole + "/" + newStatus);
         } else {
             System.out.println("Update failed. Please try again.");
         }
@@ -187,6 +199,52 @@ public class AdminMenu {
                 return input;
             }
             System.out.println("Invalid status. Choose from: " + VALID_STATUSES);
+        }
+    }
+
+    // ---------- NEW for Deliverable 8 ----------
+    private void viewAuditLogs() {
+        boolean back = false;
+        while (!back) {
+            System.out.println("\n=== SYSTEM AUDIT LOGS ===");
+            System.out.println("1. View All System Logs");
+            System.out.println("2. Filter Logs by User ID");
+            System.out.println("3. Back");
+
+            int choice = readIntInput("Choose an option: ");
+            switch (choice) {
+                case 1:
+                    printLogTable(logDao.getAllLogs());
+                    break;
+                case 2:
+                    int userId = readIntInput("Enter User ID to filter: ");
+                    printLogTable(logDao.getLogsByUserId(userId));
+                    break;
+                case 3:
+                    back = true;
+                    break;
+                default:
+                    System.out.println("Invalid option.");
+            }
+        }
+    }
+
+    private void printLogTable(List<ActivityLog> logs) {
+        String format = "%-5s | %-8s | %-18s | %-35s | %-20s%n";
+        System.out.printf(format, "ID", "User ID", "Action Type", "Description", "Timestamp");
+        System.out.println("-".repeat(97));
+
+        if (logs.isEmpty()) {
+            System.out.println("No logs found.");
+            return;
+        }
+
+        for (ActivityLog log : logs) {
+            String desc = log.description();
+            if (desc.length() > 35) {
+                desc = desc.substring(0, 32) + "...";
+            }
+            System.out.printf(format, log.id(), log.userId(), log.actionType(), desc, log.timestamp());
         }
     }
 

@@ -1,6 +1,7 @@
 package org.example.dao;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -51,25 +52,48 @@ public class DatabaseInitializer {
                         " FOREIGN KEY (Vehicle_ID) REFERENCES VEHICLES(Vehicle_ID)," +
                         " FOREIGN KEY (Driver_ID) REFERENCES DRIVERS(Driver_ID))",
 
-                "CREATE TABLE IF NOT EXISTS ACTIVITY_LOGS (" +
-                        " Log_ID INTEGER PRIMARY KEY AUTOINCREMENT," +
-                        " User_ID INTEGER," +
-                        " Driver_ID INTEGER," +
-                        " Action TEXT NOT NULL," +
-                        " Date_Time TEXT DEFAULT CURRENT_TIMESTAMP," +
-                        " Description TEXT," +
-                        " FOREIGN KEY (User_ID) REFERENCES USERS(Users_ID)," +
-                        " FOREIGN KEY (Driver_ID) REFERENCES DRIVERS(Driver_ID))"
+                "CREATE TABLE IF NOT EXISTS activity_logs (" +
+                        " id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                        " user_id INTEGER NOT NULL," +
+                        " action_type TEXT NOT NULL," +
+                        " description TEXT NOT NULL," +
+                        " timestamp DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                        " FOREIGN KEY (user_id) REFERENCES USERS(Users_ID) ON DELETE CASCADE)"
         };
 
         try (Connection conn = DatabaseConnection.getConnection();
              Statement st = conn.createStatement()) {
+            dropOutdatedActivityLogs(conn);
             for (String sql : ddl) {
                 st.execute(sql);
             }
             System.out.println("Database initialized.");
         } catch (SQLException e) {
             throw new RuntimeException("Database initialization failed: " + e.getMessage(), e);
+        }
+    }
+
+    // The old Deliverable 5 table had different columns (Action, Date_Time...).
+    // CREATE TABLE IF NOT EXISTS would keep that old table, so drop it once
+    // if it does not have the new action_type column.
+    private static void dropOutdatedActivityLogs(Connection conn) throws SQLException {
+        boolean exists = false;
+        boolean hasNewSchema = false;
+
+        try (Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery("PRAGMA table_info(activity_logs)")) {
+            while (rs.next()) {
+                exists = true;
+                if ("action_type".equalsIgnoreCase(rs.getString("name"))) {
+                    hasNewSchema = true;
+                }
+            }
+        }
+
+        if (exists && !hasNewSchema) {
+            try (Statement st = conn.createStatement()) {
+                st.execute("DROP TABLE activity_logs");
+            }
         }
     }
 }

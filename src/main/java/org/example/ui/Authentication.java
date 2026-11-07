@@ -1,5 +1,6 @@
 package org.example.ui;
 
+import org.example.dao.ActivityLogDao;
 import org.example.dao.UserDao;
 import org.example.model.User;
 
@@ -11,6 +12,7 @@ public class Authentication {
 
     private final UserDao userDao;
     private final Scanner scanner;
+    private final ActivityLogDao logDao = new ActivityLogDao();
 
     public Authentication(UserDao userDao, Scanner scanner) {
         this.userDao = userDao;
@@ -82,6 +84,7 @@ public class Authentication {
             System.out.println("Your account is still pending approval.");
             return;
         }
+        logDao.logAction(user.usersId(), "USER_LOGIN", user.username() + " logged in as " + user.role());
         routeByRole(user);
     }
 
